@@ -187,6 +187,71 @@ does not start:
 
 `contextlock mcp-config` prints a generic configuration snippet.
 
+## Example Workflows
+
+Use ContextLock when you want an AI coding agent to inspect a repository without
+handing it raw access to sensitive paths or likely secrets. The agent still gets
+useful context, but through safe MCP tools that block risky files and redact
+supported secret patterns before returning content.
+
+### Start a Safe Repo Inspection
+
+Ask the agent to begin with policy and risk discovery before reading files:
+
+```text
+Use ContextLock before inspecting this repository.
+First run policy.explain, then repo.scan_risks.
+After that, list files with repo.list_files and only read files through
+repo.read_file_safe.
+```
+
+Typical tool flow:
+
+1. `policy.explain` shows which paths and redactors are active.
+2. `repo.scan_risks` summarizes blocked files and detected secret patterns.
+3. `repo.list_files` returns files the active policy allows.
+4. `repo.read_file_safe` reads allowed files with supported secrets redacted.
+
+### Review a Feature Without Opening Secrets
+
+Use this when you want help understanding a code path, but the repository may
+contain `.env` files, private keys, local databases, or service credentials:
+
+```text
+Use ContextLock to inspect the authentication flow.
+Search for auth-related code safely, then read only the allowed files needed to
+explain the flow.
+```
+
+The agent can use `repo.search_safe` for terms such as `auth`, `token`,
+`session`, `webhook`, or `DATABASE_URL`. Search results and file reads come back
+redacted, and blocked files are denied instead of returned.
+
+### Check Before Sharing Context
+
+Run a local scan before asking an agent to work deeply in a project:
+
+```bash
+npx --yes contextlock@1 scan
+npx --yes contextlock@1 report --fail-on high
+```
+
+This gives you a quick view of sensitive paths and detected secret patterns.
+For team projects, commit a reviewed `contextlock.config.json` so contributors
+and agents use the same baseline policy.
+
+### Handle Denied Access
+
+If the agent asks for a blocked file, keep the boundary intact:
+
+```text
+That file is blocked by ContextLock. Use policy.explain and repo.search_safe to
+find a safe alternative, or explain what specific non-sensitive detail is needed.
+```
+
+Denied access is expected behavior. It means ContextLock is preserving the
+project policy instead of leaking raw context.
+
 ## Agent Skill
 
 ContextLock includes an optional [Agent Skills](https://agentskills.io/)
