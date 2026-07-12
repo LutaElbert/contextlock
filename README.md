@@ -46,6 +46,7 @@ This repo uses Node.js 20+ and pnpm.
 pnpm install
 pnpm build
 pnpm dev -- scan
+pnpm test:mcp
 ```
 
 Start the MCP server locally:
@@ -53,6 +54,10 @@ Start the MCP server locally:
 ```bash
 pnpm dev -- mcp
 ```
+
+`pnpm test:mcp` builds the CLI, connects to it as a real stdio MCP client,
+checks tool discovery, and calls policy, listing, and safe-read tools. The same
+test runs on Node.js 20 and 22 in GitHub Actions.
 
 ## MCP Client Config
 

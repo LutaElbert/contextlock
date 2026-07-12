@@ -21,6 +21,7 @@
     "dev": "tsx src/cli.ts",
     "scan": "tsx src/cli.ts scan",
     "mcp": "tsx src/cli.ts mcp",
+    "test:mcp": "pnpm build && tsx tests/mcp-smoke.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepack": "pnpm build"
   },
