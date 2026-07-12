@@ -1,18 +1,25 @@
 {
+  "schemaVersion": 1,
   "blockedPatterns": [
     ".env",
     ".env.*",
+    "**/.env",
+    "**/.env.*",
     "**/*.pem",
     "**/*.key",
     "**/id_rsa",
+    "**/id_dsa",
     "**/credentials.json",
     "**/service-account*.json",
     "**/*.sqlite",
     "**/*.db",
+    "**/*.dump",
     "**/node_modules/**",
     "**/.git/**",
     "**/dist/**",
-    "**/build/**"
+    "**/build/**",
+    "**/.next/**",
+    "**/.turbo/**"
   ],
   "redact": {
     "apiKeys": true,

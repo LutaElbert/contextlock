@@ -19,6 +19,10 @@ Block sensitive files and redact common secrets before repository context reache
 > change before the first stable release. Pin a version in shared automation if
 > you need repeatable behavior.
 
+The npm package is intentionally CLI-only; importing `contextlock` as a library
+is not a supported API. See [Stability Policy](docs/STABILITY.md) for the v1
+contracts, limitations, SemVer policy, and release checklist.
+
 ## Why ContextLock?
 
 AI coding agents are more useful with repository context, but real projects can
@@ -243,6 +247,7 @@ Example configuration:
 
 ```json
 {
+  "schemaVersion": 1,
   "blockedPatterns": [
     ".env",
     ".env.*",
@@ -263,6 +268,17 @@ Example configuration:
 }
 ```
 
+ContextLock reads `contextlock.config.json` from the process working directory
+(`cwd`), which is also the root for relative paths and policy matching. It does
+not automatically move to the nearest Git root. Set the MCP process `cwd` to
+the repository you intend to protect.
+
+Configuration is additive. `blockedPatterns` adds unique patterns to the
+baseline list, and `redact` can enable additional redactors; config cannot turn
+off baseline protections. `schemaVersion: 1` is required when a config file is
+present. Unknown fields, unsupported schema versions, invalid values, and
+symlinked config files are rejected with an error.
+
 > [!WARNING]
 > ContextLock reduces accidental exposure; it is not a secret manager, malware
 > scanner, sandbox, or guarantee that every sensitive value will be detected.
@@ -280,15 +296,12 @@ cd contextlock
 
 ```bash
 pnpm install --frozen-lockfile
-pnpm typecheck
-pnpm test:skill
-pnpm test:mcp
-pnpm pack --dry-run
+pnpm test
 ```
 
-`pnpm test:mcp` builds the CLI, connects as a real stdio MCP client, verifies
-tool discovery, and exercises policy, file-listing, and safe-read behavior. CI
-runs the same smoke test on Node.js 22 and 24.
+The aggregate test command covers scanner and policy behavior, CLI and MCP
+smokes, the bundled skill, type checking, and installation from the generated
+npm tarball. CI runs it on the minimum Node.js 22.13 release and Node.js 24.
 
 For development against this repository:
 
@@ -317,12 +330,14 @@ after the package version is updated on `main`.
 1. Update `package.json` to the next version in a pull request.
 2. Merge the pull request into `main`.
 3. Open the **Release** workflow and choose **Run workflow**.
-4. Enter the matching tag, such as `v0.1.1`, and run it.
+4. Enter the matching tag, such as `v1.0.0` or `v1.0.0-rc.1`, set the prerelease
+   input consistently, and run it.
 
-The workflow installs dependencies, runs type checks and the MCP smoke test,
-performs a package dry run, validates the tag, publishes the package to npm
-with provenance, and creates the GitHub release. The workflow requires an
-`NPM_TOKEN` repository secret with npm package publishing permissions.
+The main-only workflow validates the tag and prerelease state before installing
+dependencies, runs the complete suite, publishes with provenance, and creates a
+GitHub release. Prereleases use npm's `next` tag. Retrying is safe when the npm
+version or GitHub release already exists. The workflow requires an `NPM_TOKEN`
+repository secret with npm package publishing permissions.
 
 ## Contributing
 

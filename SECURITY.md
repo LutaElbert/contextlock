@@ -3,12 +3,18 @@
 ## Supported Versions
 
 ContextLock is currently pre-1.0. Security fixes are applied to the latest
-release and the `main` branch.
+release and the `main` branch. After v1, the latest major release is supported;
+older majors receive fixes only when explicitly announced.
 
 | Version | Supported |
 | --- | --- |
 | Latest release | Yes |
+| `main` | Yes |
 | Older releases | No |
+
+Node.js 22.13+ is supported. Users should run a currently maintained Node.js
+release and update ContextLock promptly because secret-detection gaps and
+filesystem boundary issues can have security impact.
 
 ## Reporting a Vulnerability
 

@@ -19,10 +19,44 @@ permissions:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate release request
+        id: release
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Tag must be a valid v-prefixed SemVer, such as v1.0.0 or v1.0.0-rc.1."
+            exit 1
+          fi
+          if [[ "$TAG" != "v$VERSION" ]]; then
+            echo "Tag $TAG does not match package.json version v$VERSION."
+            exit 1
+          fi
+
+          HAS_PRERELEASE=false
+          [[ "$VERSION" == *-* ]] && HAS_PRERELEASE=true
+          if [[ "$PRERELEASE" != "$HAS_PRERELEASE" ]]; then
+            echo "The prerelease input must be $HAS_PRERELEASE for version $VERSION."
+            exit 1
+          fi
+
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$HAS_PRERELEASE" == "true" ]]; then
+            echo "npm_tag=next" >> "$GITHUB_OUTPUT"
+          else
+            echo "npm_tag=latest" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: pnpm/action-setup@v4
         with:
@@ -35,37 +69,32 @@ jobs:
           registry-url: https://registry.npmjs.org
 
       - run: pnpm install --frozen-lockfile
-      - run: pnpm typecheck
-      - run: pnpm test:skill
-      - run: pnpm test:mcp
-      - run: pnpm pack --dry-run
-
-      - name: Validate release tag
-        shell: bash
-        run: |
-          TAG="${{ inputs.tag }}"
-          VERSION="$(node -p "require('./package.json').version")"
-
-          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
-            echo "Tag must look like v0.1.1 or v1.0.0-beta.1."
-            exit 1
-          fi
-
-          if [[ "$TAG" != "v$VERSION" ]]; then
-            echo "Tag $TAG does not match package.json version v$VERSION."
-            exit 1
-          fi
+      - run: pnpm test
 
       - name: Publish to npm
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: pnpm publish --access public --provenance --no-git-checks
+          VERSION: ${{ steps.release.outputs.version }}
+          NPM_TAG: ${{ steps.release.outputs.npm_tag }}
+        run: |
+          set -euo pipefail
+          if npm view "contextlock@$VERSION" version >/dev/null 2>&1; then
+            echo "contextlock@$VERSION is already published; skipping npm publish."
+          else
+            pnpm publish --access public --provenance --no-git-checks --tag "$NPM_TAG"
+          fi
 
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
+          set -euo pipefail
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "GitHub release $TAG already exists; skipping creation."
+            exit 0
+          fi
+
           FLAGS=()
           if [[ "${{ inputs.prerelease }}" == "true" ]]; then
             FLAGS+=(--prerelease)

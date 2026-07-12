@@ -17,8 +17,7 @@ ContextLock requires Node.js 22.13+ and pnpm 11.
 
 ```bash
 pnpm install
-pnpm typecheck
-pnpm test:mcp
+pnpm test
 ```
 
 Run the CLI during development with:
@@ -33,8 +32,13 @@ pnpm dev -- mcp
 1. Fork the repository and create a focused branch.
 2. Keep changes small and consistent with the existing TypeScript style.
 3. Add or update tests for behavior changes.
-4. Run `pnpm typecheck` and `pnpm test:mcp`.
+4. Run `pnpm test`, including the package-consumer smoke test.
 5. Open a pull request using the provided template.
+
+Public CLI, config, structured output, and MCP behavior should follow
+[docs/STABILITY.md](docs/STABILITY.md). Document user-visible changes in
+[CHANGELOG.md](CHANGELOG.md); proposals that alter a candidate stable contract
+need explicit migration notes.
 
 By submitting a contribution, you agree that it is licensed under the
 project's Apache License 2.0.
