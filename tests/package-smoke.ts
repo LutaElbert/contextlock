@@ -30,8 +30,8 @@ try {
     assert.ok(listing.includes(required), `tarball is missing ${required}`);
   }
 
-  execFileSync("pnpm", ["init"], { cwd: temp, stdio: "ignore" });
-  execFileSync("pnpm", ["add", "--ignore-scripts", tarball], { cwd: temp, stdio: "ignore" });
+  execFileSync("npm", ["init", "--yes"], { cwd: temp, stdio: "ignore" });
+  execFileSync("npm", ["install", "--ignore-scripts", tarball], { cwd: temp, stdio: "ignore" });
 
   const cli = join(temp, "node_modules", ".bin", "contextlock");
   assert.equal(execFileSync(cli, ["--version"], { encoding: "utf8" }).trim(), expectedVersion);
