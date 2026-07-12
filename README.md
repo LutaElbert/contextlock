@@ -1,12 +1,77 @@
+<div align="center">
+  <img src="assets/social-preview.jpg" alt="ContextLock - safe context for AI coding agents" width="100%">
+
 # ContextLock
 
+**A local-first MCP safety layer for AI coding agents.**
+
+Block sensitive files and redact common secrets before repository context reaches an AI client.
+
 [![CI](https://github.com/LutaElbert/contextlock/actions/workflows/ci.yml/badge.svg)](https://github.com/LutaElbert/contextlock/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/LutaElbert/contextlock?display_name=tag)](https://github.com/LutaElbert/contextlock/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-Vibe code safely in real repos. ContextLock is a local-first MCP safety layer that blocks dangerous files and redacts secrets before AI agents see project context.
+</div>
 
-> **Project status:** Early development (`0.x`). APIs and policy behavior may
-> change before the first stable release.
+> [!IMPORTANT]
+> ContextLock is in early development (`0.x`). APIs and policy behavior may
+> change before the first stable release. The npm package is not published yet;
+> use the source-based setup below for the current release.
+
+## Why ContextLock?
+
+AI coding agents are more useful with repository context, but real projects can
+contain `.env` files, private keys, database URLs, credentials, webhooks, and
+client data. ContextLock provides a controlled local boundary between an
+MCP-compatible AI client and a project:
+
+```text
+AI coding client
+      |
+      | local stdio MCP
+      v
+ ContextLock
+      |
+      | block files + redact values + report risks
+      v
+ Local repository
+```
+
+- **Local-first:** repository content is processed on your machine.
+- **Blocked by policy:** sensitive files never appear in safe file listings or
+  reads.
+- **Redacted before return:** supported secret patterns are replaced with clear
+  placeholders.
+- **Inspectable:** scan and report commands show what the active policy finds.
+- **Configurable:** each project can maintain its own policy file.
+
+## Quick Start
+
+ContextLock requires Node.js 22.13+ and pnpm 11.
+
+```bash
+git clone git@github.com:LutaElbert/contextlock.git
+cd contextlock
+pnpm install --frozen-lockfile
+pnpm build
+```
+
+Initialize a policy in the repository you want to protect, then scan it:
+
+```bash
+cd /path/to/your/project
+node /path/to/contextlock/dist/cli.js init
+node /path/to/contextlock/dist/cli.js scan
+node /path/to/contextlock/dist/cli.js report
+```
+
+Start the MCP server from the project being protected:
+
+```bash
+node /path/to/contextlock/dist/cli.js mcp
+```
+
+When ContextLock is published to npm, the equivalent commands will be:
 
 ```bash
 npx contextlock init
@@ -14,115 +79,220 @@ npx contextlock scan
 npx contextlock mcp
 ```
 
-## Why
+## MCP Client Setup
 
-AI coding agents get better with more context, but real repos contain secrets, credentials, private keys, database URLs, and client data. ContextLock sits between MCP-compatible AI clients and your project files so agents can inspect useful code without seeing values they should never receive.
+Build ContextLock once, then configure your coding agent to launch it from the
+repository you want to protect. Replace `/absolute/path/to/contextlock` in the
+examples below with the clone path on your machine.
+
+| Coding agent | Setup method | Scope |
+| --- | --- | --- |
+| Codex | `codex mcp add` | User configuration |
+| Claude Code | `claude mcp add` | Current project by default |
+| Cursor | `.cursor/mcp.json` | Current workspace |
+| VS Code with GitHub Copilot | `.vscode/mcp.json` | Current workspace |
+
+### Codex
+
+From the repository you want ContextLock to protect:
+
+```bash
+codex mcp add contextlock -- \
+  node /absolute/path/to/contextlock/dist/cli.js mcp
+codex mcp list
+```
+
+Restart Codex or begin a new session in that repository, then ask it to use
+`repo.scan_risks`. See the official [Codex MCP documentation](https://developers.openai.com/codex/mcp/)
+for configuration details.
+
+### Claude Code
+
+From the repository you want to protect, add ContextLock with local scope:
+
+```bash
+claude mcp add --scope local --transport stdio contextlock -- \
+  node /absolute/path/to/contextlock/dist/cli.js mcp
+claude mcp get contextlock
+```
+
+Start Claude Code in the same repository and run `/mcp` to check the server.
+Use `--scope project` instead if you intentionally want to share a `.mcp.json`
+configuration with collaborators. See the official [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp).
+
+### Cursor
+
+Create `.cursor/mcp.json` in the repository you want to protect:
+
+```json
+{
+  "mcpServers": {
+    "contextlock": {
+      "command": "node",
+      "args": ["/absolute/path/to/contextlock/dist/cli.js", "mcp"]
+    }
+  }
+}
+```
+
+Open that repository in Cursor, then open **Settings > Tools & MCP** and enable
+`contextlock`. Cursor should discover the five tools after the server starts.
+See the official [Cursor MCP documentation](https://docs.cursor.com/context/model-context-protocol).
+
+### VS Code with GitHub Copilot
+
+Create `.vscode/mcp.json` in the repository you want to protect. VS Code uses a
+top-level `servers` key rather than `mcpServers`:
+
+```json
+{
+  "servers": {
+    "contextlock": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/contextlock/dist/cli.js", "mcp"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
+```
+
+Run **MCP: List Servers** from the Command Palette, start `contextlock`, and
+accept the workspace trust prompt after reviewing the command. See the official
+[VS Code MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration).
+
+### Verify the Connection
+
+After setup, confirm that the agent discovers these five tools:
 
 ```text
-AI client
-Cursor / Claude / Codex
-        |
-        | local stdio MCP
-        v
-ContextLock
-        |
-        | block + redact + audit
-        v
-Local repo
+repo.list_files
+repo.read_file_safe
+repo.search_safe
+repo.scan_risks
+policy.explain
 ```
 
-## Current MVP
+Ask the agent to run `policy.explain`, then `repo.scan_risks`. If the server
+does not start:
 
-- `contextlock init` creates a local `contextlock.config.json`.
-- `contextlock scan` finds blocked files and redactable secrets.
-- `contextlock mcp` starts a local stdio MCP server.
-- `contextlock mcp-config` prints a client config snippet.
-- MCP tools:
-  - `repo.list_files`
-  - `repo.read_file_safe`
-  - `repo.search_safe`
-  - `repo.scan_risks`
-  - `policy.explain`
+- Confirm `node --version` is 22.13 or newer.
+- Run `pnpm build` again in the ContextLock clone.
+- Confirm the configured `dist/cli.js` path is absolute and exists.
+- Confirm the agent was opened in the repository you intend to protect.
+- Check the agent's MCP server logs for process startup errors.
 
-## Local Development
+After npm publication, the command can be shortened to `npx contextlock mcp`,
+and `contextlock mcp-config` will print a generic configuration snippet.
 
-This repo uses Node.js 22.13+ and pnpm 11.
+## MCP Tools
+
+| Tool | Purpose |
+| --- | --- |
+| `repo.list_files` | List text files allowed by the active policy. |
+| `repo.read_file_safe` | Read an allowed file with supported secrets redacted. |
+| `repo.search_safe` | Search allowed text content and return redacted snippets. |
+| `repo.scan_risks` | Summarize blocked files and detected secret patterns. |
+| `policy.explain` | Show the active blocking and redaction policy. |
+
+## Default Protection
+
+Running `contextlock init` creates `contextlock.config.json`. The default policy
+blocks common sensitive or generated paths, including:
+
+- `.env` files, private keys, credentials, service-account files, and database
+  files
+- dependency and build output such as `node_modules`, `dist`, `.next`, and
+  `.turbo`
+- Git internals under `.git`
+
+Allowed text files are scanned for supported API keys, JWTs, database URLs,
+private keys, and Slack or Discord webhook URLs. Email redaction is available
+but disabled by default.
+
+Example configuration:
+
+```json
+{
+  "blockedPatterns": [
+    ".env",
+    ".env.*",
+    "**/*.pem",
+    "**/*.key",
+    "**/credentials.json",
+    "**/node_modules/**",
+    "**/.git/**"
+  ],
+  "redact": {
+    "apiKeys": true,
+    "jwt": true,
+    "databaseUrls": true,
+    "privateKeys": true,
+    "webhooks": true,
+    "emails": false
+  }
+}
+```
+
+> [!WARNING]
+> ContextLock reduces accidental exposure; it is not a secret manager, malware
+> scanner, sandbox, or guarantee that every sensitive value will be detected.
+> Keep credentials out of source control and review your project policy before
+> granting an AI client access.
+
+## Development
 
 ```bash
-pnpm install
-pnpm build
-pnpm dev -- scan
+pnpm install --frozen-lockfile
+pnpm typecheck
 pnpm test:mcp
+pnpm pack --dry-run
 ```
 
-Start the MCP server locally:
+`pnpm test:mcp` builds the CLI, connects as a real stdio MCP client, verifies
+tool discovery, and exercises policy, file-listing, and safe-read behavior. CI
+runs the same smoke test on Node.js 22 and 24.
+
+For development against this repository:
 
 ```bash
+pnpm dev -- scan
 pnpm dev -- mcp
+pnpm dev -- mcp-config --local
 ```
 
-`pnpm test:mcp` builds the CLI, connects to it as a real stdio MCP client,
-checks tool discovery, and calls policy, listing, and safe-read tools. The same
-test runs on Node.js 22 and 24 in GitHub Actions.
+## Roadmap
 
-## Releasing
+- Expand secret detection and policy test coverage.
+- Improve audit reports and machine-readable findings.
+- Publish the CLI package to npm.
+- Add premium policy packs, team policy sync, database sanitization, and
+  enterprise audit exports without weakening the local-first core.
 
-Releases are created manually from GitHub Actions after the package version has
-been updated on `main`.
+Core promise: **No cloud required. Your code stays local.**
 
-1. Update `package.json` to the next version through a pull request.
+## Releases
+
+GitHub releases are created manually through the
+[Release workflow](https://github.com/LutaElbert/contextlock/actions/workflows/release.yml)
+after the package version is updated on `main`.
+
+1. Update `package.json` to the next version in a pull request.
 2. Merge the pull request into `main`.
-3. Open the **Release** workflow in GitHub Actions.
-4. Click **Run workflow** and enter the matching tag, such as `v0.1.1`.
+3. Open the **Release** workflow and choose **Run workflow**.
+4. Enter the matching tag, such as `v0.1.1`, and run it.
 
-The workflow installs dependencies, runs type checks, runs the MCP smoke test,
-performs a dry package build, validates that the tag matches `package.json`, and
-then creates the GitHub Release.
-
-## MCP Client Config
-
-After publishing, clients can launch ContextLock with:
-
-```json
-{
-  "mcpServers": {
-    "contextlock": {
-      "command": "npx",
-      "args": ["contextlock", "mcp"]
-    }
-  }
-}
-```
-
-During local development, use:
-
-```json
-{
-  "mcpServers": {
-    "contextlock": {
-      "command": "pnpm",
-      "args": ["dev", "--", "mcp"]
-    }
-  }
-}
-```
-
-## Product Direction
-
-ContextLock starts as an open local tool for freelancers, solo developers, and agencies. Paid features can come later around advanced reports, premium rule packs, team policy sync, database sanitization, and enterprise audit exports.
-
-Core promise:
-
-> No cloud required. Your code stays local.
+The workflow installs dependencies, runs type checks and the MCP smoke test,
+performs a package dry run, validates the tag, and creates the GitHub release.
 
 ## Contributing
 
-Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before
-opening a pull request. Use synthetic or redacted test data only, and report
-vulnerabilities privately according to [SECURITY.md](SECURITY.md).
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening
+a pull request, follow the [Code of Conduct](CODE_OF_CONDUCT.md), and use only
+synthetic or redacted test data.
 
-By participating, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+Report vulnerabilities privately according to [SECURITY.md](SECURITY.md).
 
 ## License
 
-Licensed under the [Apache License 2.0](LICENSE).
+ContextLock is licensed under the [Apache License 2.0](LICENSE).

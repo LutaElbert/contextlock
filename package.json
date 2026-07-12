@@ -13,6 +13,7 @@
   },
   "files": [
     "dist",
+    "assets/social-preview.jpg",
     "README.md",
     "LICENSE"
   ],
