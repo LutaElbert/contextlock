@@ -65,6 +65,20 @@ pnpm dev -- mcp
 checks tool discovery, and calls policy, listing, and safe-read tools. The same
 test runs on Node.js 22 and 24 in GitHub Actions.
 
+## Releasing
+
+Releases are created manually from GitHub Actions after the package version has
+been updated on `main`.
+
+1. Update `package.json` to the next version through a pull request.
+2. Merge the pull request into `main`.
+3. Open the **Release** workflow in GitHub Actions.
+4. Click **Run workflow** and enter the matching tag, such as `v0.1.1`.
+
+The workflow installs dependencies, runs type checks, runs the MCP smoke test,
+performs a dry package build, validates that the tag matches `package.json`, and
+then creates the GitHub Release.
+
 ## MCP Client Config
 
 After publishing, clients can launch ContextLock with:
