@@ -1,0 +1,25 @@
+{
+  "blockedPatterns": [
+    ".env",
+    ".env.*",
+    "**/*.pem",
+    "**/*.key",
+    "**/id_rsa",
+    "**/credentials.json",
+    "**/service-account*.json",
+    "**/*.sqlite",
+    "**/*.db",
+    "**/node_modules/**",
+    "**/.git/**",
+    "**/dist/**",
+    "**/build/**"
+  ],
+  "redact": {
+    "apiKeys": true,
+    "jwt": true,
+    "databaseUrls": true,
+    "privateKeys": true,
+    "webhooks": true,
+    "emails": false
+  }
+}

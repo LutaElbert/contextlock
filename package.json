@@ -1,0 +1,51 @@
+{
+  "name": "contextlock",
+  "version": "0.1.0",
+  "description": "Local-first MCP safety layer that blocks and redacts risky repo context before AI agents see it.",
+  "type": "module",
+  "packageManager": "pnpm@11.7.0",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/LutaElbert/contextlock.git"
+  },
+  "bin": {
+    "contextlock": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/cli.ts",
+    "scan": "tsx src/cli.ts scan",
+    "mcp": "tsx src/cli.ts mcp",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepack": "pnpm build"
+  },
+  "keywords": [
+    "mcp",
+    "ai",
+    "security",
+    "secrets",
+    "redaction",
+    "vibe-coding"
+  ],
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "commander": "^12.1.0",
+    "picomatch": "^4.0.3",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "@types/picomatch": "^4.0.3",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
