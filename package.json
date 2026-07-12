@@ -1,6 +1,6 @@
 {
   "name": "contextlock",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Local-first MCP safety layer that blocks and redacts risky repo context before AI agents see it.",
   "type": "module",
   "exports": {},
