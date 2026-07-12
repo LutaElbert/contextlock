@@ -41,12 +41,16 @@ test("blocks policy files, binary files, large files, and non-regular files", ()
 });
 
 test("redacts high-confidence token, authorization, and secret assignment classes", () => {
+  const npmToken = ["npm", "abcdefghijklmnopqrstuvwxyz1234567890"].join("_");
+  const gitLabToken = ["glpat", "abcdefghijklmnopQRST"].join("-");
+  const stripeToken = ["sk", "live", "abcdefghijklmnopqrstuv"].join("_");
+  const bearerToken = ["Bearer", "abcdefghijklmnopqrstuvwx"].join(" ");
   const source = [
-    "npm_abcdefghijklmnopqrstuvwxyz1234567890",
-    "glpat-abcdefghijklmnopQRST",
-    "sk_live_abcdefghijklmnopqrstuv",
+    npmToken,
+    gitLabToken,
+    stripeToken,
     "Authorization: BearerTokenValue1234567890",
-    "Bearer abcdefghijklmnopqrstuvwx",
+    bearerToken,
     "client_secret = 'abcdefghijklmnopQRST'",
     "password=placeholder",
     "api_key=short"
@@ -66,7 +70,8 @@ test("list, search, and scan are deterministic, redacted, and root-sanitized", (
   const { root, cleanup } = fixture();
   try {
     mkdirSync(join(root, "src"));
-    writeFileSync(join(root, "z.txt"), "needle npm_abcdefghijklmnopqrstuvwxyz1234567890");
+    const npmToken = ["npm", "abcdefghijklmnopqrstuvwxyz1234567890"].join("_");
+    writeFileSync(join(root, "z.txt"), `needle ${npmToken}`);
     writeFileSync(join(root, "src", "a.ts"), "export const value = 'needle';");
     writeFileSync(join(root, ".env"), "password=abcdefghijklmnop");
     assert.deepEqual(listFiles(root), ["src/a.ts", "z.txt"]);
