@@ -1,0 +1,30 @@
+name: Feature request
+description: Propose a focused improvement to ContextLock.
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What safety or workflow problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Explain the desired behavior and, if relevant, its MCP interface.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Describe current workarounds or other approaches.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Contribution
+      options:
+        - label: I would be willing to help implement or test this feature.

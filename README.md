@@ -1,6 +1,12 @@
 # ContextLock
 
+[![CI](https://github.com/LutaElbert/contextlock/actions/workflows/ci.yml/badge.svg)](https://github.com/LutaElbert/contextlock/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 Vibe code safely in real repos. ContextLock is a local-first MCP safety layer that blocks dangerous files and redacts secrets before AI agents see project context.
+
+> **Project status:** Early development (`0.x`). APIs and policy behavior may
+> change before the first stable release.
 
 ```bash
 npx contextlock init
@@ -95,6 +101,14 @@ Core promise:
 
 > No cloud required. Your code stays local.
 
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before
+opening a pull request. Use synthetic or redacted test data only, and report
+vulnerabilities privately according to [SECURITY.md](SECURITY.md).
+
+By participating, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+
 ## License
 
-Apache-2.0
+Licensed under the [Apache License 2.0](LICENSE).
