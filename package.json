@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Local-first MCP safety layer that blocks and redacts risky repo context before AI agents see it.",
   "type": "module",
+  "exports": {},
   "packageManager": "pnpm@11.7.0",
   "repository": {
     "type": "git",
@@ -16,7 +17,11 @@
     "skills",
     "assets/social-preview.jpg",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md",
+    "SECURITY.md",
+    "CONTRIBUTING.md",
+    "docs"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -25,6 +30,11 @@
     "mcp": "tsx src/cli.ts mcp",
     "test:skill": "tsx tests/skill-smoke.ts",
     "test:mcp": "pnpm build && tsx tests/mcp-smoke.ts",
+    "test:scanner": "tsx tests/scanner.test.ts",
+    "test:policy": "tsx tests/policy.test.ts",
+    "test:cli": "pnpm build && tsx tests/cli-smoke.ts",
+    "test:package": "tsx tests/package-smoke.ts",
+    "test": "pnpm typecheck && pnpm test:scanner && pnpm test:policy && pnpm test:cli && pnpm test:skill && pnpm test:mcp && pnpm test:package",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepack": "pnpm build"
   },
