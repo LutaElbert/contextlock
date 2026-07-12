@@ -185,6 +185,39 @@ does not start:
 After npm publication, the command can be shortened to `npx contextlock mcp`,
 and `contextlock mcp-config` will print a generic configuration snippet.
 
+## Agent Skill
+
+ContextLock includes an optional [Agent Skills](https://agentskills.io/)
+workflow in [`skills/contextlock`](skills/contextlock). The MCP server enforces
+blocking and redaction; the skill teaches an agent when to use the five safe
+tools, how to handle denied access, and not to bypass the active policy.
+
+Install the skill in the repository you want to protect. Choose the directory
+for your coding agent:
+
+| Coding agent | Project skill directory |
+| --- | --- |
+| Codex | `.agents/skills/contextlock/` |
+| Claude Code | `.claude/skills/contextlock/` |
+| Cursor | `.cursor/skills/contextlock/` |
+| VS Code with GitHub Copilot | `.github/skills/contextlock/` |
+
+For example, install it for Codex from the protected repository:
+
+```bash
+mkdir -p .agents/skills/contextlock
+cp /absolute/path/to/contextlock/skills/contextlock/SKILL.md \
+  .agents/skills/contextlock/SKILL.md
+```
+
+Use the corresponding directory from the table for another agent. Restart the
+agent or begin a new session after installation, then ask it to "inspect this
+repository safely with ContextLock." The agent should start with
+`policy.explain` and `repo.scan_risks` before reading project files.
+
+The skill complements the MCP setup above; it does not install or start the
+ContextLock server by itself.
+
 ## MCP Tools
 
 | Tool | Purpose |
@@ -245,6 +278,7 @@ Example configuration:
 ```bash
 pnpm install --frozen-lockfile
 pnpm typecheck
+pnpm test:skill
 pnpm test:mcp
 pnpm pack --dry-run
 ```

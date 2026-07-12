@@ -25,4 +25,5 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm test:skill
       - run: pnpm test:mcp

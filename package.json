@@ -13,6 +13,7 @@
   },
   "files": [
     "dist",
+    "skills",
     "assets/social-preview.jpg",
     "README.md",
     "LICENSE"
@@ -22,6 +23,7 @@
     "dev": "tsx src/cli.ts",
     "scan": "tsx src/cli.ts scan",
     "mcp": "tsx src/cli.ts mcp",
+    "test:skill": "tsx tests/skill-smoke.ts",
     "test:mcp": "pnpm build && tsx tests/mcp-smoke.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "prepack": "pnpm build"
