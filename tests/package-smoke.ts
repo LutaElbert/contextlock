@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
@@ -30,8 +30,13 @@ try {
     assert.ok(listing.includes(required), `tarball is missing ${required}`);
   }
 
-  execFileSync("npm", ["init", "--yes"], { cwd: temp, stdio: "ignore" });
-  execFileSync("npm", ["install", "--ignore-scripts", tarball], { cwd: temp, stdio: "ignore" });
+  if (spawnSync("npm", ["--version"]).status === 0) {
+    execFileSync("npm", ["init", "--yes"], { cwd: temp, stdio: "ignore" });
+    execFileSync("npm", ["install", "--ignore-scripts", tarball], { cwd: temp, stdio: "ignore" });
+  } else {
+    execFileSync("pnpm", ["init"], { cwd: temp, stdio: "ignore" });
+    execFileSync("pnpm", ["add", "--ignore-scripts", tarball], { cwd: temp, stdio: "ignore" });
+  }
 
   const cli = join(temp, "node_modules", ".bin", "contextlock");
   assert.equal(execFileSync(cli, ["--version"], { encoding: "utf8" }).trim(), expectedVersion);
