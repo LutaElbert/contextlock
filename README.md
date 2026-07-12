@@ -8,6 +8,7 @@
 Block sensitive files and redact common secrets before repository context reaches an AI client.
 
 [![CI](https://github.com/LutaElbert/contextlock/actions/workflows/ci.yml/badge.svg)](https://github.com/LutaElbert/contextlock/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/contextlock)](https://www.npmjs.com/package/contextlock)
 [![Release](https://img.shields.io/github/v/release/LutaElbert/contextlock?display_name=tag)](https://github.com/LutaElbert/contextlock/releases)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
@@ -15,8 +16,8 @@ Block sensitive files and redact common secrets before repository context reache
 
 > [!IMPORTANT]
 > ContextLock is in early development (`0.x`). APIs and policy behavior may
-> change before the first stable release. The npm package is not published yet;
-> use the source-based setup below for the current release.
+> change before the first stable release. Pin a version in shared automation if
+> you need repeatable behavior.
 
 ## Why ContextLock?
 
@@ -47,43 +48,40 @@ AI coding client
 
 ## Quick Start
 
-ContextLock requires Node.js 22.13+ and pnpm 11.
+ContextLock requires Node.js 22.13+.
+
+Run it without installing:
 
 ```bash
-git clone git@github.com:LutaElbert/contextlock.git
-cd contextlock
-pnpm install --frozen-lockfile
-pnpm build
+npx contextlock --help
 ```
 
 Initialize a policy in the repository you want to protect, then scan it:
 
 ```bash
 cd /path/to/your/project
-node /path/to/contextlock/dist/cli.js init
-node /path/to/contextlock/dist/cli.js scan
-node /path/to/contextlock/dist/cli.js report
+npx contextlock init
+npx contextlock scan
+npx contextlock report
 ```
 
 Start the MCP server from the project being protected:
 
 ```bash
-node /path/to/contextlock/dist/cli.js mcp
+npx contextlock mcp
 ```
 
-When ContextLock is published to npm, the equivalent commands will be:
+Or install it globally:
 
 ```bash
-npx contextlock init
-npx contextlock scan
-npx contextlock mcp
+npm install -g contextlock
+contextlock scan
 ```
 
 ## MCP Client Setup
 
-Build ContextLock once, then configure your coding agent to launch it from the
-repository you want to protect. Replace `/absolute/path/to/contextlock` in the
-examples below with the clone path on your machine.
+Configure your coding agent to launch ContextLock from the repository you want
+to protect. The examples below use `npx` so the published npm package is used.
 
 | Coding agent | Setup method | Scope |
 | --- | --- | --- |
@@ -98,7 +96,7 @@ From the repository you want ContextLock to protect:
 
 ```bash
 codex mcp add contextlock -- \
-  node /absolute/path/to/contextlock/dist/cli.js mcp
+  npx contextlock mcp
 codex mcp list
 ```
 
@@ -112,7 +110,7 @@ From the repository you want to protect, add ContextLock with local scope:
 
 ```bash
 claude mcp add --scope local --transport stdio contextlock -- \
-  node /absolute/path/to/contextlock/dist/cli.js mcp
+  npx contextlock mcp
 claude mcp get contextlock
 ```
 
@@ -128,8 +126,8 @@ Create `.cursor/mcp.json` in the repository you want to protect:
 {
   "mcpServers": {
     "contextlock": {
-      "command": "node",
-      "args": ["/absolute/path/to/contextlock/dist/cli.js", "mcp"]
+      "command": "npx",
+      "args": ["contextlock", "mcp"]
     }
   }
 }
@@ -149,8 +147,8 @@ top-level `servers` key rather than `mcpServers`:
   "servers": {
     "contextlock": {
       "type": "stdio",
-      "command": "node",
-      "args": ["/absolute/path/to/contextlock/dist/cli.js", "mcp"],
+      "command": "npx",
+      "args": ["contextlock", "mcp"],
       "cwd": "${workspaceFolder}"
     }
   }
@@ -177,13 +175,11 @@ Ask the agent to run `policy.explain`, then `repo.scan_risks`. If the server
 does not start:
 
 - Confirm `node --version` is 22.13 or newer.
-- Run `pnpm build` again in the ContextLock clone.
-- Confirm the configured `dist/cli.js` path is absolute and exists.
+- Confirm `npx contextlock --help` works in a terminal.
 - Confirm the agent was opened in the repository you intend to protect.
 - Check the agent's MCP server logs for process startup errors.
 
-After npm publication, the command can be shortened to `npx contextlock mcp`,
-and `contextlock mcp-config` will print a generic configuration snippet.
+`contextlock mcp-config` prints a generic configuration snippet.
 
 ## Agent Skill
 
@@ -275,6 +271,13 @@ Example configuration:
 
 ## Development
 
+Clone the repository when you want to contribute or test local changes:
+
+```bash
+git clone git@github.com:LutaElbert/contextlock.git
+cd contextlock
+```
+
 ```bash
 pnpm install --frozen-lockfile
 pnpm typecheck
@@ -299,7 +302,7 @@ pnpm dev -- mcp-config --local
 
 - Expand secret detection and policy test coverage.
 - Improve audit reports and machine-readable findings.
-- Publish the CLI package to npm.
+- Improve package setup examples for more coding agents.
 - Add premium policy packs, team policy sync, database sanitization, and
   enterprise audit exports without weakening the local-first core.
 
@@ -307,7 +310,7 @@ Core promise: **No cloud required. Your code stays local.**
 
 ## Releases
 
-GitHub releases are created manually through the
+npm packages and GitHub releases are published through the
 [Release workflow](https://github.com/LutaElbert/contextlock/actions/workflows/release.yml)
 after the package version is updated on `main`.
 
@@ -317,7 +320,9 @@ after the package version is updated on `main`.
 4. Enter the matching tag, such as `v0.1.1`, and run it.
 
 The workflow installs dependencies, runs type checks and the MCP smoke test,
-performs a package dry run, validates the tag, and creates the GitHub release.
+performs a package dry run, validates the tag, publishes the package to npm
+with provenance, and creates the GitHub release. The workflow requires an
+`NPM_TOKEN` repository secret with npm package publishing permissions.
 
 ## Contributing
 
