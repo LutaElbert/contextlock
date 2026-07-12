@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/social-preview.png" alt="ContextLock - safe context for AI coding agents" width="100%">
+  <img src="assets/social-preview.jpg" alt="ContextLock - safe context for AI coding agents" width="100%">
 
 # ContextLock
 
