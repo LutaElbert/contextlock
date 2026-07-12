@@ -81,8 +81,48 @@ npx contextlock mcp
 
 ## MCP Client Setup
 
-Add a server entry to your MCP-compatible client and set the command path to
-the ContextLock build on your machine:
+Build ContextLock once, then configure your coding agent to launch it from the
+repository you want to protect. Replace `/absolute/path/to/contextlock` in the
+examples below with the clone path on your machine.
+
+| Coding agent | Setup method | Scope |
+| --- | --- | --- |
+| Codex | `codex mcp add` | User configuration |
+| Claude Code | `claude mcp add` | Current project by default |
+| Cursor | `.cursor/mcp.json` | Current workspace |
+| VS Code with GitHub Copilot | `.vscode/mcp.json` | Current workspace |
+
+### Codex
+
+From the repository you want ContextLock to protect:
+
+```bash
+codex mcp add contextlock -- \
+  node /absolute/path/to/contextlock/dist/cli.js mcp
+codex mcp list
+```
+
+Restart Codex or begin a new session in that repository, then ask it to use
+`repo.scan_risks`. See the official [Codex MCP documentation](https://developers.openai.com/codex/mcp/)
+for configuration details.
+
+### Claude Code
+
+From the repository you want to protect, add ContextLock with local scope:
+
+```bash
+claude mcp add --scope local --transport stdio contextlock -- \
+  node /absolute/path/to/contextlock/dist/cli.js mcp
+claude mcp get contextlock
+```
+
+Start Claude Code in the same repository and run `/mcp` to check the server.
+Use `--scope project` instead if you intentionally want to share a `.mcp.json`
+configuration with collaborators. See the official [Claude Code MCP documentation](https://code.claude.com/docs/en/mcp).
+
+### Cursor
+
+Create `.cursor/mcp.json` in the repository you want to protect:
 
 ```json
 {
@@ -95,9 +135,55 @@ the ContextLock build on your machine:
 }
 ```
 
-The MCP client should launch ContextLock with the protected repository as its
-working directory. After npm publication, run `contextlock mcp-config` to print
-a generic `npx` configuration snippet.
+Open that repository in Cursor, then open **Settings > Tools & MCP** and enable
+`contextlock`. Cursor should discover the five tools after the server starts.
+See the official [Cursor MCP documentation](https://docs.cursor.com/context/model-context-protocol).
+
+### VS Code with GitHub Copilot
+
+Create `.vscode/mcp.json` in the repository you want to protect. VS Code uses a
+top-level `servers` key rather than `mcpServers`:
+
+```json
+{
+  "servers": {
+    "contextlock": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/contextlock/dist/cli.js", "mcp"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}
+```
+
+Run **MCP: List Servers** from the Command Palette, start `contextlock`, and
+accept the workspace trust prompt after reviewing the command. See the official
+[VS Code MCP configuration reference](https://code.visualstudio.com/docs/agents/reference/mcp-configuration).
+
+### Verify the Connection
+
+After setup, confirm that the agent discovers these five tools:
+
+```text
+repo.list_files
+repo.read_file_safe
+repo.search_safe
+repo.scan_risks
+policy.explain
+```
+
+Ask the agent to run `policy.explain`, then `repo.scan_risks`. If the server
+does not start:
+
+- Confirm `node --version` is 22.13 or newer.
+- Run `pnpm build` again in the ContextLock clone.
+- Confirm the configured `dist/cli.js` path is absolute and exists.
+- Confirm the agent was opened in the repository you intend to protect.
+- Check the agent's MCP server logs for process startup errors.
+
+After npm publication, the command can be shortened to `npx contextlock mcp`,
+and `contextlock mcp-config` will print a generic configuration snippet.
 
 ## MCP Tools
 
