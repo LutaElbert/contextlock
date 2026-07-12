@@ -13,7 +13,7 @@ tests, documentation, policy rules, and reproducible bug reports are welcome.
 
 ## Local Setup
 
-ContextLock requires Node.js 20+ and pnpm 11.
+ContextLock requires Node.js 22.13+ and pnpm 11.
 
 ```bash
 pnpm install

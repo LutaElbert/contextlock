@@ -46,7 +46,7 @@ Local repo
 
 ## Local Development
 
-This repo uses Node.js 20+ and pnpm.
+This repo uses Node.js 22.13+ and pnpm 11.
 
 ```bash
 pnpm install
@@ -63,7 +63,7 @@ pnpm dev -- mcp
 
 `pnpm test:mcp` builds the CLI, connects to it as a real stdio MCP client,
 checks tool discovery, and calls policy, listing, and safe-read tools. The same
-test runs on Node.js 20 and 22 in GitHub Actions.
+test runs on Node.js 22 and 24 in GitHub Actions.
 
 ## MCP Client Config
 
