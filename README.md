@@ -15,12 +15,11 @@ Block sensitive files and redact common secrets before repository context reache
 </div>
 
 > [!IMPORTANT]
-> ContextLock is in early development (`0.x`). APIs and policy behavior may
-> change before the first stable release. Pin a version in shared automation if
-> you need repeatable behavior.
+> ContextLock `1.x` is the stable CLI and MCP contract line. Pin a specific
+> version in shared automation if you need repeatable behavior.
 
 The npm package is intentionally CLI-only; importing `contextlock` as a library
-is not a supported API. See [Stability Policy](docs/STABILITY.md) for the v1
+is not a supported API. See [Stability Policy](docs/STABILITY.md) for the stable
 contracts, limitations, SemVer policy, and release checklist.
 
 ## Why ContextLock?

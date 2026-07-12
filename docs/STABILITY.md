@@ -1,8 +1,8 @@
 # Stability Policy
 
-ContextLock is currently at version 0.1.0 and is not yet a stable v1 release.
-This document identifies the contracts intended to become stable and the work
-required before that promise is made.
+ContextLock 1.x is the stable CLI and MCP contract line. This document defines
+the supported contracts, compatibility policy, and known limitations for stable
+releases.
 
 ## Supported Runtime
 
@@ -11,12 +11,12 @@ required before that promise is made.
 - The npm package is CLI-only. JavaScript and TypeScript imports are not a
   supported public API; the package `exports` map is intentionally empty.
 
-## Candidate Stable Contracts
+## Stable Contracts
 
 The CLI command names, documented flags, exit status behavior, generated config
 shape, redaction placeholder format, and the five documented MCP tool names and
-result shapes are candidate v1 contracts. Until v1, incompatible changes may
-still occur and will be called out in the changelog.
+result shapes are stable v1 contracts. Incompatible changes to these contracts
+require a new major version and will be called out in the changelog.
 
 `schemaVersion` is the version marker for configuration and structured command
 or MCP output. Config files require version `1` and reject unsupported versions
@@ -47,18 +47,18 @@ closed with an actionable error.
 
 ## Semantic Versioning
 
-Starting at v1, incompatible changes to stable contracts require a major
-release. Additive fields and capabilities may ship in minor releases, and
-compatible fixes in patch releases. Prereleases use SemVer suffixes and publish
-to npm under the `next` dist-tag.
+Incompatible changes to stable contracts require a major release. Additive
+fields and capabilities may ship in minor releases, and compatible fixes in
+patch releases. Prereleases use SemVer suffixes and publish to npm under the
+`next` dist-tag.
 
-## v1 Release Checklist
+## Release Checklist
 
 - Validate `schemaVersion: 1` on all promised structured surfaces.
-- Freeze and test CLI commands, flags, exit codes, MCP names, and result shapes.
+- Test CLI commands, flags, exit codes, MCP names, and result shapes.
 - Validate configuration with actionable errors and migration guidance.
-- Resolve or explicitly contract filesystem and symlink behavior.
-- Complete security review, threat model, and supported-version policy.
+- Recheck filesystem and symlink behavior.
+- Review security posture and supported-version policy.
 - Pass unit, CLI, MCP, package-consumer, and supported-Node CI suites.
 - Verify package contents, provenance publishing, prerelease, and retry paths.
-- Publish migration notes and remove pre-1.0 warnings from user documentation.
+- Publish migration notes for any changed stable contracts.
