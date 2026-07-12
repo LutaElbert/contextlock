@@ -51,40 +51,43 @@ AI coding client
 
 ## Quick Start
 
-ContextLock requires Node.js 22.13+.
+ContextLock requires Node.js 22.13+. The stable npm line is `contextlock@1`;
+pin an exact version, such as `contextlock@1.0.0`, when automation must be
+fully repeatable.
 
 Run it without installing:
 
 ```bash
-npx contextlock --help
+npx --yes contextlock@1 --help
 ```
 
 Initialize a policy in the repository you want to protect, then scan it:
 
 ```bash
 cd /path/to/your/project
-npx contextlock init
-npx contextlock scan
-npx contextlock report
+npx --yes contextlock@1 init
+npx --yes contextlock@1 scan
+npx --yes contextlock@1 report
 ```
 
 Start the MCP server from the project being protected:
 
 ```bash
-npx contextlock mcp
+npx --yes contextlock@1 mcp
 ```
 
 Or install it globally:
 
 ```bash
-npm install -g contextlock
+npm install -g contextlock@1
 contextlock scan
 ```
 
 ## MCP Client Setup
 
 Configure your coding agent to launch ContextLock from the repository you want
-to protect. The examples below use `npx` so the published npm package is used.
+to protect. The examples below use `npx --yes contextlock@1` so the published
+stable npm package is used.
 
 | Coding agent | Setup method | Scope |
 | --- | --- | --- |
@@ -99,7 +102,7 @@ From the repository you want ContextLock to protect:
 
 ```bash
 codex mcp add contextlock -- \
-  npx contextlock mcp
+  npx --yes contextlock@1 mcp
 codex mcp list
 ```
 
@@ -113,7 +116,7 @@ From the repository you want to protect, add ContextLock with local scope:
 
 ```bash
 claude mcp add --scope local --transport stdio contextlock -- \
-  npx contextlock mcp
+  npx --yes contextlock@1 mcp
 claude mcp get contextlock
 ```
 
@@ -130,7 +133,7 @@ Create `.cursor/mcp.json` in the repository you want to protect:
   "mcpServers": {
     "contextlock": {
       "command": "npx",
-      "args": ["contextlock", "mcp"]
+      "args": ["--yes", "contextlock@1", "mcp"]
     }
   }
 }
@@ -151,7 +154,7 @@ top-level `servers` key rather than `mcpServers`:
     "contextlock": {
       "type": "stdio",
       "command": "npx",
-      "args": ["contextlock", "mcp"],
+      "args": ["--yes", "contextlock@1", "mcp"],
       "cwd": "${workspaceFolder}"
     }
   }
@@ -178,7 +181,7 @@ Ask the agent to run `policy.explain`, then `repo.scan_risks`. If the server
 does not start:
 
 - Confirm `node --version` is 22.13 or newer.
-- Confirm `npx contextlock --help` works in a terminal.
+- Confirm `npx --yes contextlock@1 --help` works in a terminal.
 - Confirm the agent was opened in the repository you intend to protect.
 - Check the agent's MCP server logs for process startup errors.
 
