@@ -13,6 +13,16 @@ export type ContextLockPolicy = {
   redact: RedactionConfig;
 };
 
+export type PolicyPreset = "default" | "android" | "node" | "python" | "mobile-ai";
+
+export type PathPolicyExplanation = {
+  schemaVersion: 1;
+  path: string;
+  blocked: boolean;
+  matchedPattern?: string;
+  reason: string;
+};
+
 export type RedactionFinding = {
   type: string;
   count: number;
