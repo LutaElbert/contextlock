@@ -3,6 +3,34 @@
 All notable changes to ContextLock will be documented here. The project follows
 [Semantic Versioning](https://semver.org/).
 
+## [1.1.0] - 2026-07-13
+
+### Added
+
+- `contextlock doctor` for inspecting the active project setup, config path,
+  policy loading, and runtime readiness.
+- `contextlock why <path>` for explaining why a file is allowed or blocked.
+- `contextlock test-policy` for checking representative policy behavior before
+  trusting a project setup.
+- Project presets for Android, Node, Python, and mobile AI repositories.
+
+### Changed
+
+- Strengthened default blocking for mobile, build, generated, local model,
+  database, screenshot, capture, and keystore artifacts.
+- Improved safe file listing so MCP agents only see readable, policy-allowed
+  files.
+- Expanded secret redaction coverage for common API keys, tokens, passwords,
+  credentials, and structured JSON/YAML assignments.
+- Updated documentation around diagnostics, MCP usage, presets, and safety
+  boundaries.
+
+### Security
+
+- Policy matching is now easier to verify and explain through CLI diagnostics.
+- Case-insensitive path matching better protects uppercase variants of blocked
+  files and extensions.
+
 ## [1.0.0] - 2026-07-12
 
 ### Added
