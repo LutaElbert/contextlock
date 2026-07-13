@@ -1,5 +1,5 @@
 import { closeSync, fstatSync, lstatSync, openSync, readSync, readdirSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { basename, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { isBlocked, loadPolicy, toProjectPath } from "./policy.js";
 import type { ContextLockPolicy, RedactionFinding, SafeReadResult, ScanSummary } from "./types.js";
 
@@ -7,7 +7,12 @@ export const MAX_FILE_BYTES = 1024 * 1024;
 export const MAX_TRAVERSAL_FILES = 10_000;
 export const MAX_TRAVERSAL_DEPTH = 32;
 
-type PatternRule = { key: keyof ContextLockPolicy["redact"]; label: string; pattern: RegExp; replacement: string };
+type PatternRule = {
+  key: keyof ContextLockPolicy["redact"];
+  label: string;
+  pattern: RegExp;
+  replacement: string | ((...matches: string[]) => string);
+};
 
 const REDACTION_RULES: PatternRule[] = [
   { key: "privateKeys", label: "private_key", pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g, replacement: "[REDACTED:PRIVATE_KEY]" },
@@ -29,8 +34,8 @@ const REDACTION_RULES: PatternRule[] = [
   {
     key: "apiKeys",
     label: "secret_assignment",
-    pattern: /\b(?:api[_-]?key|access[_-]?token|auth[_-]?token|client[_-]?secret|secret[_-]?key|password|passwd)\s*[:=]\s*(["']?)(?!true\b|false\b|null\b|undefined\b|changeme\b|example\b|sample\b|placeholder\b)(?=[A-Za-z0-9_./+@=-]{16,}\1(?:\s|[,;}]|$))[A-Za-z0-9_./+@=-]+\1/gi,
-    replacement: "[REDACTED:SECRET_ASSIGNMENT]"
+    pattern: /((?:["']?)(?:[a-z0-9]+[_-])*(?:api[_-]?key|access[_-]?token|auth[_-]?token|client[_-]?secret|secret[_-]?key|token|secret|password|passwd|credentials?)["']?\s*[:=]\s*)(["']?)(?!(?:true|false|null|undefined|changeme|change_me|example|sample|placeholder)(?:\2|\s|[,;\]}#]|$))(?=[A-Za-z0-9_./+@%:=!?$&*()-]{8,}\2(?:\s|[,;\]}#]|$))[A-Za-z0-9_./+@%:=!?$&*()-]+\2/gim,
+    replacement: (_match, assignment, quote) => `${assignment}${quote}[REDACTED:SECRET_ASSIGNMENT]${quote}`
   },
   { key: "emails", label: "email", pattern: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi, replacement: "[REDACTED:EMAIL]" }
 ];
@@ -43,14 +48,21 @@ export function redactContent(content: string, policy: ContextLockPolicy): { con
   for (const rule of REDACTION_RULES) {
     if (!policy.redact[rule.key]) continue;
     let count = 0;
-    redacted = redacted.replace(rule.pattern, () => { count += 1; return rule.replacement; });
+    redacted = redacted.replace(rule.pattern, (...matches) => {
+      count += 1;
+      return typeof rule.replacement === "function" ? rule.replacement(...matches) : rule.replacement;
+    });
     if (count) findings.set(rule.label, (findings.get(rule.label) ?? 0) + count);
   }
   return { content: redacted, findings: [...findings.entries()].map(([type, count]) => ({ type, count })) };
 }
 
 export function listFiles(root: string, policy = loadPolicy(root)): string[] {
-  return traverse(resolve(root), policy, false).files.map((file) => file.path);
+  const absoluteRoot = resolve(root);
+  return traverse(absoluteRoot, policy, false).files
+    .map((file) => readFileSafe(absoluteRoot, file.path, policy))
+    .filter((result) => !result.blocked)
+    .map((result) => result.path);
 }
 
 export function readFileSafe(root: string, path: string, policy = loadPolicy(root)): SafeReadResult {
@@ -89,7 +101,6 @@ export function scanRisks(root: string, policy = loadPolicy(root)): ScanSummary 
   const redactions = new Map<string, number>();
   let filesScanned = 0;
   for (const file of traversal.files) {
-    if (!isLikelyTextFile(file.absolutePath)) continue;
     const result = readFileSafe(absoluteRoot, file.path, policy);
     if (result.blocked) {
       if (!blockedFiles.includes(file.path)) blockedFiles.push(file.path);
@@ -170,5 +181,11 @@ function readRegularFileBounded(path: string): Buffer {
     closeSync(descriptor);
   }
 }
-function isLikelyTextFile(path: string): boolean { const lowered = path.toLowerCase(); if (lowered.endsWith("dockerfile") || lowered.endsWith("makefile")) return true; const dot = lowered.lastIndexOf("."); return dot !== -1 && TEXT_EXTENSIONS.has(lowered.slice(dot)); }
+function isLikelyTextFile(path: string): boolean {
+  const name = basename(path).toLowerCase();
+  if (name === "dockerfile" || name === "makefile") return true;
+  const dot = name.lastIndexOf(".");
+  if (dot === -1) return true;
+  return TEXT_EXTENSIONS.has(name.slice(dot));
+}
 function snippet(content: string, lowerQuery: string): string { const index = content.toLowerCase().indexOf(lowerQuery); if (index === -1) return content.slice(0, 800); return content.slice(Math.max(0, index - 280), Math.min(content.length, index + lowerQuery.length + 520)); }

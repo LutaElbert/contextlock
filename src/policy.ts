@@ -2,7 +2,7 @@ import { lstatSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import picomatch from "picomatch";
 import { z } from "zod";
-import type { ContextLockPolicy } from "./types.js";
+import type { ContextLockPolicy, PathPolicyExplanation, PolicyPreset } from "./types.js";
 
 const MAX_BLOCKED_PATTERNS = 100;
 const MAX_PATTERN_LENGTH = 256;
@@ -42,8 +42,26 @@ export const DEFAULT_POLICY: ContextLockPolicy = {
     "**/.git/**",
     "**/dist/**",
     "**/build/**",
+    "build/**",
     "**/.next/**",
-    "**/.turbo/**"
+    "**/.turbo/**",
+    "**/.gradle/**",
+    "**/.idea/**",
+    "**/.kotlin/**",
+    "**/capture/**",
+    "**/captures/**",
+    "**/screenshot/**",
+    "**/screenshots/**",
+    "**/capture.{png,jpg,jpeg,webp,gif,bmp,tif,tiff,heic,avif}",
+    "**/screenshot.{png,jpg,jpeg,webp,gif,bmp,tif,tiff,heic,avif}",
+    "**/*.apk",
+    "**/*.aab",
+    "**/*.ipa",
+    "**/*.keystore",
+    "**/*.jks",
+    "**/*.tflite",
+    "**/*.onnx",
+    "**/*.mlmodel"
   ],
   redact: {
     apiKeys: true,
@@ -53,6 +71,77 @@ export const DEFAULT_POLICY: ContextLockPolicy = {
     webhooks: true,
     emails: false
   }
+};
+
+const PRESET_BLOCKED_PATTERNS: Record<PolicyPreset, string[]> = {
+  default: [],
+  android: [
+    "**/.gradle/**",
+    "**/.idea/**",
+    "**/.kotlin/**",
+    "**/build/**",
+    "build/**",
+    "**/capture/**",
+    "**/captures/**",
+    "**/screenshot/**",
+    "**/screenshots/**",
+    "**/capture.{png,jpg,jpeg,webp,gif,bmp,tif,tiff,heic,avif}",
+    "**/screenshot.{png,jpg,jpeg,webp,gif,bmp,tif,tiff,heic,avif}",
+    "**/*.apk",
+    "**/*.aab",
+    "**/*.keystore",
+    "**/*.jks",
+    "**/google-services.json"
+  ],
+  node: [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "build/**",
+    "**/.next/**",
+    "**/.turbo/**",
+    "**/.vercel/**",
+    "**/coverage/**"
+  ],
+  python: [
+    "**/__pycache__/**",
+    "**/.pytest_cache/**",
+    "**/.mypy_cache/**",
+    "**/.ruff_cache/**",
+    "**/.venv/**",
+    "**/venv/**",
+    "**/dist/**",
+    "**/build/**",
+    "build/**",
+    "**/*.egg-info/**"
+  ],
+  "mobile-ai": [
+    "**/.gradle/**",
+    "**/.idea/**",
+    "**/.kotlin/**",
+    "**/build/**",
+    "build/**",
+    "**/capture/**",
+    "**/captures/**",
+    "**/screenshot/**",
+    "**/screenshots/**",
+    "**/capture.{png,jpg,jpeg,webp,gif,bmp,tif,tiff,heic,avif}",
+    "**/screenshot.{png,jpg,jpeg,webp,gif,bmp,tif,tiff,heic,avif}",
+    "**/*.apk",
+    "**/*.aab",
+    "**/*.ipa",
+    "**/*.keystore",
+    "**/*.jks",
+    "**/*.tflite",
+    "**/*.onnx",
+    "**/*.mlmodel",
+    "**/*.pt",
+    "**/*.pth",
+    "**/*.safetensors",
+    "**/*.gguf",
+    "**/google-services.json",
+    "**/GoogleService-Info.plist"
+  ]
 };
 
 export function loadPolicy(root: string): ContextLockPolicy {
@@ -122,9 +211,37 @@ export function toProjectPath(root: string, absolutePath: string): string {
 }
 
 export function isBlocked(projectPath: string, policy: ContextLockPolicy): boolean {
+  return explainPolicyForPath(projectPath, policy).blocked;
+}
+
+export function createPolicy(preset: PolicyPreset = "default"): ContextLockPolicy {
+  return {
+    schemaVersion: 1,
+    blockedPatterns: [...new Set([...DEFAULT_POLICY.blockedPatterns, ...PRESET_BLOCKED_PATTERNS[preset]])],
+    redact: { ...DEFAULT_POLICY.redact }
+  };
+}
+
+export function policyPresets(): PolicyPreset[] {
+  return ["default", "android", "node", "python", "mobile-ai"];
+}
+
+export function explainPolicyForPath(projectPath: string, policy: ContextLockPolicy): PathPolicyExplanation {
   const normalized = projectPath.replaceAll("\\", "/");
-  return policy.blockedPatterns.some((pattern) =>
-    picomatch.isMatch(normalized, pattern, { dot: true }) ||
-    picomatch.isMatch(`/${normalized}`, pattern, { dot: true })
+  const match = policy.blockedPatterns.find((pattern) => pathMatchesPattern(normalized, pattern));
+  return {
+    schemaVersion: 1,
+    path: normalized,
+    blocked: Boolean(match),
+    ...(match ? { matchedPattern: match } : {}),
+    reason: match ? `Blocked by pattern: ${match}` : "Allowed by active policy"
+  };
+}
+
+function pathMatchesPattern(projectPath: string, pattern: string): boolean {
+  const options = { dot: true, nocase: true } as const;
+  return (
+    picomatch.isMatch(projectPath, pattern, options) ||
+    picomatch.isMatch(`/${projectPath}`, pattern, options)
   );
 }

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
@@ -24,6 +24,36 @@ try {
   assert.equal(run(["scan", "--fail-on", "high"], fixture).status, 0);
   assert.equal(run(["report", "--fail-on", "medium"], fixture).status, 1);
 
+  const why = JSON.parse(run(["why", "build/generated/output.js"], fixture).stdout);
+  assert.equal(why.blocked, true);
+  assert.equal(why.matchedPattern, "**/build/**");
+
+  for (const invalidPath of ["../outside.txt", path.resolve(fixture, "README.md")]) {
+    const invalidWhy = JSON.parse(run(["why", invalidPath], fixture).stdout);
+    assert.equal(invalidWhy.blocked, true);
+    assert.match(invalidWhy.reason, /Absolute paths|escapes project root/);
+  }
+
+  const policyTest = JSON.parse(run(["test-policy"], fixture).stdout);
+  assert.equal(policyTest.passed, true);
+  assert.ok(policyTest.checks.length >= 5);
+
+  writeFileSync(path.join(fixture, "contextlock.config.json"), JSON.stringify({
+    schemaVersion: 1,
+    blockedPatterns: ["src/**"]
+  }));
+  const restrictivePolicyTest = JSON.parse(run(["test-policy"], fixture).stdout);
+  assert.equal(restrictivePolicyTest.passed, true);
+  const allowedCheck = restrictivePolicyTest.checks.find((check: { path: string }) => check.path === "src/index.ts");
+  assert.equal(allowedCheck.required, false);
+  assert.equal(allowedCheck.passed, false);
+  rmSync(path.join(fixture, "contextlock.config.json"));
+
+  const doctor = JSON.parse(run(["doctor"], fixture).stdout);
+  assert.equal(realpathSync(doctor.cwd), realpathSync(fixture));
+  assert.equal(doctor.mcp.transport, "stdio");
+  assert.equal(doctor.policy.sampleBlockedPath.blocked, true);
+
   const config = JSON.parse(run(["mcp-config", "--cwd", fixture]).stdout);
   assert.deepEqual(config.mcpServers.contextlock, {
     command: "npx",
@@ -41,6 +71,17 @@ try {
   assert.equal(invalidThreshold.status, 1);
   assert.equal(invalidThreshold.stdout, "");
   assert.match(invalidThreshold.stderr, /never, medium, high/);
+
+  const presetFixture = mkdtempSync(path.join(tmpdir(), "contextlock-cli-preset-"));
+  try {
+    const init = run(["init", "--mobile-ai"], presetFixture);
+    assert.equal(init.status, 0);
+    assert.match(init.stdout, /mobile-ai preset/);
+    const policy = JSON.parse(readFileSync(path.join(presetFixture, "contextlock.config.json"), "utf8"));
+    assert.ok(policy.blockedPatterns.includes("**/*.safetensors"));
+  } finally {
+    rmSync(presetFixture, { recursive: true, force: true });
+  }
 
   console.log("CLI smoke test passed.");
 } finally {

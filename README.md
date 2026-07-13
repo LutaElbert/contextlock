@@ -68,6 +68,7 @@ cd /path/to/your/project
 npx --yes contextlock@1 init
 npx --yes contextlock@1 scan
 npx --yes contextlock@1 report
+npx --yes contextlock@1 doctor
 ```
 
 Start the MCP server from the project being protected:
@@ -81,6 +82,15 @@ Or install it globally:
 ```bash
 npm install -g contextlock@1
 contextlock scan
+```
+
+Use a stronger starter policy for common project types:
+
+```bash
+contextlock init --android
+contextlock init --node
+contextlock init --python
+contextlock init --mobile-ai
 ```
 
 ## MCP Client Setup
@@ -186,6 +196,26 @@ does not start:
 - Check the agent's MCP server logs for process startup errors.
 
 `contextlock mcp-config` prints a generic configuration snippet.
+
+## Trust Checks
+
+ContextLock includes small diagnostics you can run before trusting an AI agent
+with a repository:
+
+```bash
+contextlock doctor
+contextlock why .env
+contextlock why build/generated/source.ts
+contextlock test-policy
+```
+
+- `doctor` shows the active `cwd`, config status, package version, Node version,
+  configured MCP transport, redactors, and a sample blocked-path check. It is a
+  local configuration diagnostic, not a live MCP client handshake.
+- `why <path>` explains whether a project-relative path is blocked and which
+  pattern matched.
+- `test-policy` verifies required baseline protections against the active policy,
+  including generated build output, `.env`, `.git`, and mobile release artifacts.
 
 ## Example Workflows
 
@@ -304,11 +334,16 @@ blocks common sensitive or generated paths, including:
   files
 - dependency and build output such as `node_modules`, `dist`, `.next`, and
   `.turbo`
+- Android/mobile local artifacts such as `.gradle`, `.idea`, `.kotlin`, APK/AAB,
+  keystore/JKS files, screenshots/captures, and common local model files
 - Git internals under `.git`
 
-Allowed text files are scanned for supported API keys, JWTs, database URLs,
-private keys, and Slack or Discord webhook URLs. Email redaction is available
-but disabled by default.
+Path protection is case-insensitive, so case variants such as `.ENV`, `BUILD`,
+and uppercase protected extensions receive the same treatment. Allowed text
+files are scanned for supported API keys, structured secret assignments such as
+`OPENAI_API_KEY=...` and `TOKEN=...`, JWTs, database URLs, private keys, and
+Slack or Discord webhook URLs. Email redaction is available but disabled by
+default.
 
 Example configuration:
 
@@ -322,7 +357,14 @@ Example configuration:
     "**/*.key",
     "**/credentials.json",
     "**/node_modules/**",
-    "**/.git/**"
+    "**/.git/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.gradle/**",
+    "**/*.apk",
+    "**/*.aab",
+    "**/*.keystore",
+    "**/*.tflite"
   ],
   "redact": {
     "apiKeys": true,
@@ -345,6 +387,10 @@ baseline list, and `redact` can enable additional redactors; config cannot turn
 off baseline protections. `schemaVersion: 1` is required when a config file is
 present. Unknown fields, unsupported schema versions, invalid values, and
 symlinked config files are rejected with an error.
+
+Use `contextlock init --preset <name>` or the shortcut flags above to bootstrap
+project-specific defaults. Available presets are `default`, `android`, `node`,
+`python`, and `mobile-ai`.
 
 > [!WARNING]
 > ContextLock reduces accidental exposure; it is not a secret manager, malware
@@ -382,8 +428,8 @@ pnpm dev -- mcp-config --local
 
 - Expand secret detection and policy test coverage.
 - Improve audit reports and machine-readable findings.
-- Improve package setup examples for more coding agents.
-- Add premium policy packs, team policy sync, database sanitization, and
+- Add richer project-type policy packs.
+- Add premium team policy sync, database sanitization, and
   enterprise audit exports without weakening the local-first core.
 
 Core promise: **No cloud required. Your code stays local.**
