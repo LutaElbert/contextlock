@@ -52,7 +52,7 @@ AI coding client
 ## Quick Start
 
 ContextLock requires Node.js 22.13+. The stable npm line is `contextlock@1`;
-pin an exact version, such as `contextlock@1.0.0`, when automation must be
+pin an exact version, such as `contextlock@1.1.0`, when automation must be
 fully repeatable.
 
 Run it without installing:
@@ -443,7 +443,7 @@ after the package version is updated on `main`.
 1. Update `package.json` to the next version in a pull request.
 2. Merge the pull request into `main`.
 3. Open the **Release** workflow and choose **Run workflow**.
-4. Enter the matching tag, such as `v1.0.0` or `v1.0.0-rc.1`, set the prerelease
+4. Enter the matching tag, such as `v1.1.0` or `v1.1.0-rc.1`, set the prerelease
    input consistently, and run it.
 
 The main-only workflow validates the tag and prerelease state before installing
